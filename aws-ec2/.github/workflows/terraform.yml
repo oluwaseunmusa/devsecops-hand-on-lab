@@ -1,0 +1,47 @@
+name: Terraform
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+        aws-region: us-east-1
+    
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+    
+    - name: Terraform Init
+      run: terraform init
+      working-directory: ./aws-ec2
+    
+    - name: Terraform Format
+      run: terraform fmt -check
+      working-directory: ./aws-ec2
+    
+    - name: Terraform Validate
+      run: terraform validate
+      working-directory: ./aws-ec2
+    
+    - name: Terraform Plan
+      run: terraform plan
+      working-directory: ./aws-ec2
+    
+    - name: Terraform Apply
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      run: terraform apply -auto-approve
+      working-directory: ./aws-ec2
